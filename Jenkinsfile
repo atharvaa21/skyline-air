@@ -5,7 +5,7 @@ pipeline {
 
     environment {
         // >>>>>> CHANGE THESE TWO to match your AWS account <<<<<<
-        AWS_ACCOUNT_ID = 'YOUR_12_DIGIT_AWS_ACCOUNT_ID'
+        AWS_ACCOUNT_ID = '617541206100'
         AWS_REGION     = 'ap-south-1'          // the region where you created the ECR repo
 
         APP_NAME     = 'skyline-air'
@@ -107,6 +107,8 @@ pipeline {
                     MINIKUBE_IP=$(minikube ip)
                     curl -sf --retry 5 --retry-delay 3 --retry-connrefused http://${MINIKUBE_IP}:30080/ | grep -o "<title>[^<]*</title>"
                     curl -s http://${MINIKUBE_IP}:30080/ | grep -o "Version [0-9]*" | head -1
+                    echo "---- Public URL check (port 80: nginx -> Minikube -> pods) ----"
+                    curl -sf --retry 5 --retry-delay 3 --retry-connrefused http://localhost/ | grep -o "Version [0-9]*" | head -1
                 '''
             }
         }
