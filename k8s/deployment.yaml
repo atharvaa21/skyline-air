@@ -8,6 +8,11 @@ metadata:
     app: skyline-air
 spec:
   replicas: 2                      # run 2 identical pods
+  strategy:
+    type: RollingUpdate            # replace pods gradually on every new image
+    rollingUpdate:
+      maxSurge: 1                  # start 1 extra new pod first...
+      maxUnavailable: 0            # ...and only remove an old pod once the new one is ready
   selector:
     matchLabels:
       app: skyline-air             # this Deployment manages pods with this label
@@ -22,7 +27,9 @@ spec:
         - name: skyline-air
           # Jenkins replaces IMAGE_PLACEHOLDER with <account>.dkr.ecr.<region>.amazonaws.com/skyline-air:v<build number>
           image: IMAGE_PLACEHOLDER
-          imagePullPolicy: Always  # always pull from the registry (ECR)
+          # Every build has a unique tag (v1, v2, ...), so IfNotPresent is safe. It also means the
+          # pods still start after a server restart, even when the 12-hour ECR login has expired.
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
           readinessProbe:          # pod only receives traffic once this succeeds
