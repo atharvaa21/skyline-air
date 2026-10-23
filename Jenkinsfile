@@ -32,6 +32,14 @@ pipeline {
                 // Pull the latest code from the GitHub repo configured in the Jenkins job
                 checkout scm
                 sh 'ls -la'
+                // Fail immediately (not 5 minutes later) if the account ID was never filled in
+                sh '''
+                    if ! echo "${AWS_ACCOUNT_ID}" | grep -Eq '^[0-9]{12}$'; then
+                        echo "ERROR: AWS_ACCOUNT_ID at the top of the Jenkinsfile must be your 12-digit AWS account ID."
+                        echo "Edit the Jenkinsfile on GitHub, fix that line, commit, and run again."
+                        exit 1
+                    fi
+                '''
             }
         }
 
@@ -59,7 +67,7 @@ pipeline {
             steps {
                 // No password is stored anywhere: the EC2 server has an IAM role that allows ECR access.
                 sh '''
-                    aws sts get-caller-identity
+                    aws sts get-caller-identity --region ${AWS_REGION}
                     aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                     docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     docker push ${IMAGE_NAME}:latest
