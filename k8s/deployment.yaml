@@ -1,0 +1,40 @@
+# Deployment = "keep N copies (pods) of my app running, and replace them
+# gradually when I ship a new image".
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skyline-air
+  labels:
+    app: skyline-air
+spec:
+  replicas: 2                      # run 2 identical pods
+  selector:
+    matchLabels:
+      app: skyline-air             # this Deployment manages pods with this label
+  template:
+    metadata:
+      labels:
+        app: skyline-air
+    spec:
+      imagePullSecrets:        # login that lets Kubernetes pull from the private ECR repo
+        - name: ecr-secret   # (created by the Jenkins pipeline on every run)
+      containers:
+        - name: skyline-air
+          # Jenkins replaces IMAGE_PLACEHOLDER with <account>.dkr.ecr.<region>.amazonaws.com/skyline-air:v<build number>
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: Always  # always pull from the registry (ECR)
+          ports:
+            - containerPort: 80
+          readinessProbe:          # pod only receives traffic once this succeeds
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
